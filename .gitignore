@@ -3,6 +3,9 @@ bootstrap/.env
 **/*.env
 !**/*.env.example
 
+# Specific .env.example files that contain sensitive data
+bootstrap/.env.example
+
 # Proxmox DR config (contains IPs and secrets)
 proxmox-dr/config/proxmox-config.env
 proxmox-dr/config/*.env
