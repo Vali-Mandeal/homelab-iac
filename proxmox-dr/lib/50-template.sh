@@ -16,8 +16,11 @@ download_ubuntu_cloud_image() {
         return 0
     fi
 
+    # Use config value or fall back to default
+    local image_url="${UBUNTU_CLOUD_IMAGE_URL:-$DEFAULT_UBUNTU_CLOUD_IMAGE_URL}"
+
     log_info "Downloading Ubuntu 24.04 cloud image..."
-    wget -q --show-progress "$UBUNTU_CLOUD_IMAGE_URL" -O "$image_file"
+    wget -q --show-progress "$image_url" -O "$image_file"
 }
 
 create_template_vm() {

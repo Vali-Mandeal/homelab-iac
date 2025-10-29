@@ -21,6 +21,7 @@ set -euo pipefail
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly CONFIG_FILE="${SCRIPT_DIR}/config/proxmox-config.env"
 readonly REMOTE_DIR_PREFIX="/tmp/proxmox-dr"
+readonly LIB_LOCAL_DIR="${SCRIPT_DIR}/lib-local"
 
 # Colors for output
 readonly RED='\033[0;31m'
@@ -63,12 +64,31 @@ cleanup_on_error() {
         log_error "Deployment failed with exit code: $exit_code"
         if [[ -n "${REMOTE_DIR:-}" ]] && [[ -n "${SSH_TARGET:-}" ]]; then
             log_info "Cleaning up remote directory: $REMOTE_DIR"
-            ssh -o ConnectTimeout=5 "$SSH_TARGET" "rm -rf '$REMOTE_DIR'" 2>/dev/null || true
+            local ssh_key_opt
+            ssh_key_opt=$(get_ssh_key_option)
+            ssh $ssh_key_opt -o ConnectTimeout=5 "$SSH_TARGET" "rm -rf '$REMOTE_DIR'" 2>/dev/null || true
         fi
     fi
 }
 
 trap cleanup_on_error EXIT
+
+# ==============================================================================
+# LIBRARY LOADING
+# ==============================================================================
+
+load_local_libraries() {
+    if [[ ! -d "$LIB_LOCAL_DIR" ]]; then
+        return 0
+    fi
+
+    for lib_file in "$LIB_LOCAL_DIR"/*.sh; do
+        if [[ -f "$lib_file" ]]; then
+            # shellcheck disable=SC1090
+            source "$lib_file"
+        fi
+    done
+}
 
 # ==============================================================================
 # CONFIGURATION
@@ -123,12 +143,21 @@ load_configuration() {
 # SSH CONNECTIVITY
 # ==============================================================================
 
+get_ssh_key_option() {
+    if [[ -f "$HOME/.ssh/homelab_admin" ]]; then
+        echo "-i $HOME/.ssh/homelab_admin"
+    fi
+}
+
 test_ssh_connection() {
     log_section "Testing SSH Connection"
 
     log_info "Testing connection to ${SSH_TARGET}:${SSH_PORT}..."
 
-    if ! ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no -p "$SSH_PORT" "$SSH_TARGET" "echo 'SSH connection successful'" &>/dev/null; then
+    local ssh_key_opt
+    ssh_key_opt=$(get_ssh_key_option)
+
+    if ! ssh $ssh_key_opt -o ConnectTimeout=10 -o StrictHostKeyChecking=no -p "$SSH_PORT" "$SSH_TARGET" "echo 'SSH connection successful'" &>/dev/null; then
         log_error "Failed to connect to Proxmox host"
         log_error "Please check:"
         log_error "  1. Proxmox host is reachable: ping ${PROXMOX_HOST}"
@@ -151,10 +180,19 @@ copy_files_to_proxmox() {
     # Create remote directory with timestamp
     REMOTE_DIR="${REMOTE_DIR_PREFIX}-$(date +%s)"
 
+    local ssh_key_opt
+    ssh_key_opt=$(get_ssh_key_option)
+
     log_info "Creating remote directory: $REMOTE_DIR"
-    ssh -p "$SSH_PORT" "$SSH_TARGET" "mkdir -p '$REMOTE_DIR'"
+    ssh $ssh_key_opt -p "$SSH_PORT" "$SSH_TARGET" "mkdir -p '$REMOTE_DIR'"
 
     log_info "Copying DR scripts to Proxmox..."
+
+    # Build rsync SSH command with key if available
+    local rsync_ssh_cmd="ssh -p ${SSH_PORT}"
+    if [[ -n "$ssh_key_opt" ]]; then
+        rsync_ssh_cmd="ssh $ssh_key_opt -p ${SSH_PORT}"
+    fi
 
     # Copy entire proxmox-dr directory to remote
     # Exclude .git and other unnecessary files
@@ -163,13 +201,13 @@ copy_files_to_proxmox() {
         --exclude='.DS_Store' \
         --exclude='*.md' \
         --exclude='config/proxmox-config.env' \
-        -e "ssh -p ${SSH_PORT}" \
+        -e "$rsync_ssh_cmd" \
         "$SCRIPT_DIR/" \
         "${SSH_TARGET}:${REMOTE_DIR}/"
 
     # Copy config file separately (to ensure it's there)
     log_info "Copying configuration file..."
-    scp -P "$SSH_PORT" "$CONFIG_FILE" "${SSH_TARGET}:${REMOTE_DIR}/config/proxmox-config.env"
+    scp $ssh_key_opt -P "$SSH_PORT" "$CONFIG_FILE" "${SSH_TARGET}:${REMOTE_DIR}/config/proxmox-config.env"
 
     log_info "Files copied successfully"
 }
@@ -181,8 +219,11 @@ copy_files_to_proxmox() {
 execute_remote_setup() {
     log_section "Executing Remote Setup"
 
+    local ssh_key_opt
+    ssh_key_opt=$(get_ssh_key_option)
+
     log_info "Making scripts executable..."
-    ssh -p "$SSH_PORT" "$SSH_TARGET" "chmod +x '${REMOTE_DIR}/run-setup.sh' '${REMOTE_DIR}/lib/'*.sh"
+    ssh $ssh_key_opt -p "$SSH_PORT" "$SSH_TARGET" "chmod +x '${REMOTE_DIR}/run-setup.sh' '${REMOTE_DIR}/lib/'*.sh"
 
     log_info "Starting Proxmox DR setup on remote host..."
     log_info "This will take 15-30 minutes. Output will stream below."
@@ -190,13 +231,13 @@ execute_remote_setup() {
 
     # Execute remote script and stream output
     # Use -t to allocate pseudo-TTY for colored output
-    if ssh -t -p "$SSH_PORT" "$SSH_TARGET" "cd '${REMOTE_DIR}' && sudo ./run-setup.sh"; then
+    if ssh $ssh_key_opt -t -p "$SSH_PORT" "$SSH_TARGET" "cd '${REMOTE_DIR}' && sudo ./run-setup.sh"; then
         log_info "Remote setup completed successfully"
         return 0
     else
         log_error "Remote setup failed"
         log_warn "Remote files are preserved at: ${REMOTE_DIR}"
-        log_warn "To debug: ssh -p ${SSH_PORT} ${SSH_TARGET} 'cd ${REMOTE_DIR} && sudo ./run-setup.sh'"
+        log_warn "To debug: ssh $ssh_key_opt -p ${SSH_PORT} ${SSH_TARGET} 'cd ${REMOTE_DIR} && sudo ./run-setup.sh'"
         return 1
     fi
 }
@@ -208,9 +249,12 @@ execute_remote_setup() {
 cleanup_remote_files() {
     log_section "Cleaning Up"
 
+    local ssh_key_opt
+    ssh_key_opt=$(get_ssh_key_option)
+
     if [[ -n "${REMOTE_DIR:-}" ]]; then
         log_info "Removing remote directory: $REMOTE_DIR"
-        ssh -p "$SSH_PORT" "$SSH_TARGET" "rm -rf '$REMOTE_DIR'" || true
+        ssh $ssh_key_opt -p "$SSH_PORT" "$SSH_TARGET" "rm -rf '$REMOTE_DIR'" || true
         log_info "Cleanup complete"
     fi
 }
@@ -240,6 +284,8 @@ main() {
     log_section "Proxmox DR Deployment Orchestrator"
 
     load_configuration
+    load_local_libraries
+    setup_ssh_keys
     test_ssh_connection
     copy_files_to_proxmox
 

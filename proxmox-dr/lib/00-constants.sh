@@ -15,7 +15,8 @@ readonly DEFAULT_CONTROL_VM_ID="100"
 # UBUNTU CLOUD IMAGE
 # ==============================================================================
 
-readonly UBUNTU_CLOUD_IMAGE_URL="https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-amd64.img"
+# Default URL (can be overridden in config)
+DEFAULT_UBUNTU_CLOUD_IMAGE_URL="https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-amd64.img"
 readonly UBUNTU_CLOUD_IMAGE_FILE="/tmp/ubuntu-24.04-cloudimg.img"
 
 # ==============================================================================
