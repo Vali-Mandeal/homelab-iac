@@ -6,7 +6,7 @@ bootstrap/.env
 # Proxmox DR config (contains IPs and secrets)
 proxmox-dr/config/proxmox-config.env
 proxmox-dr/config/*.env
-!proxmox-dr/config/*.env.example
+proxmox-dr/config/proxmox-config.env.example
 
 # Terraform
 *.tfstate
