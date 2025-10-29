@@ -1,0 +1,52 @@
+# Secrets and sensitive information
+bootstrap/.env
+**/*.env
+!**/*.env.example
+
+# Proxmox DR config (contains IPs and secrets)
+proxmox-dr/config/proxmox-config.env
+proxmox-dr/config/*.env
+!proxmox-dr/config/*.env.example
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+!*.tfvars.example
+
+# Ansible
+*.retry
+*.vault
+.vault-pass
+group_vars/*/vault.yml
+host_vars/*/vault.yml
+
+# SSH Keys
+*.pem
+*.key
+id_rsa*
+!*.pub
+
+# Packer
+packer_cache/
+*.box
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backups
+*.bak
+*.backup
