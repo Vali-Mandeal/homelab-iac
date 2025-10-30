@@ -489,8 +489,9 @@ main() {
     log_info "  2. Install Docker"
     log_info "  3. Install IaC tools (Terraform, Ansible, Packer)"
     log_info "  4. Setup SMB backup mount to UNAS"
-    log_info "  5. Deploy Docker Compose services stack"
-    log_info "  6. Initialize HashiCorp Vault"
+    log_info "  5. Restore from backup (if available)"
+    log_info "  6. Deploy Docker Compose services stack"
+    log_info "  7. Initialize HashiCorp Vault (if not restored)"
 
     prompt_continue "Do you want to continue?"
 
@@ -502,6 +503,13 @@ main() {
     install_ansible
     install_packer
     setup_project_repo
+
+    # Restore from backup before deploying services
+    if [[ -f "${SCRIPT_DIR}/restore-control-vm.sh" ]]; then
+        log_info "Running restore script..."
+        bash "${SCRIPT_DIR}/restore-control-vm.sh" || log_warn "Restore script failed or no backup found"
+    fi
+
     setup_docker_compose
     initialize_vault
 
