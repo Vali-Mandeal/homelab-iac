@@ -1,0 +1,33 @@
+# Control VM - Git Ignore
+# Prevent secrets and sensitive data from being committed
+
+# Environment variables (contains secrets)
+docker-compose/.env
+
+# Registry authentication
+docker-compose/configs/registry-auth/htpasswd
+
+# Vault data (handled by Docker volumes)
+docker-compose/configs/vault-data/
+
+# Backup files
+*.backup
+*.bak
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation with private network info
+README.md
+QUICKSTART.md
+DEPLOYMENT-CHECKLIST.md
+docs/

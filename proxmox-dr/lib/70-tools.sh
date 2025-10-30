@@ -76,20 +76,14 @@ clone_homelab_repository() {
 }
 
 setup_control_vm() {
-    log_section "Setting Up Control VM (Installing IaC Tools)"
+    log_section "Setting Up Control VM (Cloning Repository)"
 
     local ssh_target="${CONTROL_VM_USER}@${CONTROL_VM_IP}"
-    local terraform_version="${TERRAFORM_VERSION:-$DEFAULT_TERRAFORM_VERSION}"
-    local ansible_version="${ANSIBLE_VERSION:-$DEFAULT_ANSIBLE_VERSION}"
-    local packer_version="${PACKER_VERSION:-$DEFAULT_PACKER_VERSION}"
 
-    install_base_packages "$ssh_target"
-    add_user_to_docker_group "$ssh_target" "$CONTROL_VM_USER"
-    install_terraform "$ssh_target" "$terraform_version"
-    install_ansible "$ssh_target" "$ansible_version"
-    install_packer "$ssh_target" "$packer_version"
+    # Clone the repository - the setup script inside will handle tool installation
     clone_homelab_repository "$ssh_target" "${GITHUB_REPO_URL:-}" "$CONTROL_VM_USER"
 
-    log_info "Control VM setup complete"
+    log_info "Control VM repository cloned"
+    log_info "Tool installation and service deployment will happen in next step"
     log_info "SSH to Control VM: ssh ${ssh_target}"
 }

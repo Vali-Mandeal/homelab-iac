@@ -20,24 +20,41 @@ deploy_control_vm_stack() {
 
     local ssh_target="${CONTROL_VM_USER}@${CONTROL_VM_IP}"
 
-    log_info "Deploying AWX, MkDocs, Portainer, Vault, and Registry..."
-    ssh_to_vm "$ssh_target" "
-        cd /opt/homelab-iac/docker-compose 2>/dev/null || {
-            echo 'Docker Compose directory not found, skipping stack deployment'
-            exit 0
-        }
-        docker-compose -f control-vm-stack.yml up -d
-    "
+    # Check if control-vm setup script exists
+    log_info "Checking for Control VM setup script..."
+    if ! ssh_to_vm "$ssh_target" "test -f /opt/homelab-iac/control-vm/scripts/setup-control-vm.sh"; then
+        log_warn "Control VM setup script not found at /opt/homelab-iac/control-vm/scripts/setup-control-vm.sh"
+        log_warn "Skipping Control VM services deployment"
+        log_info "You can deploy services manually later by running:"
+        log_info "  ssh ${ssh_target}"
+        log_info "  cd /opt/homelab-iac/control-vm/scripts"
+        log_info "  sudo ./setup-control-vm.sh"
+        return 0
+    fi
 
-    log_info "Docker Compose stack deployed"
-    print_service_urls
+    log_info "Running Control VM setup script (this will take 15-30 minutes)..."
+    log_info "Installing Docker, IaC tools, and deploying services..."
+
+    # Run the setup script on Control VM
+    # Note: Setup script requires root, so we sudo it
+    if ssh_to_vm "$ssh_target" "cd /opt/homelab-iac/control-vm/scripts && sudo ./setup-control-vm.sh"; then
+        log_info "Control VM services deployed successfully"
+        print_service_urls
+    else
+        log_error "Control VM setup script failed"
+        log_warn "You can debug by SSHing to Control VM and checking logs:"
+        log_warn "  ssh ${ssh_target}"
+        log_warn "  cd /opt/homelab-iac/control-vm/scripts"
+        log_warn "  sudo ./setup-control-vm.sh"
+        return 1
+    fi
 }
 
 print_service_urls() {
     log_info "Access services at:"
-    log_info "  - MkDocs: http://${CONTROL_VM_IP}:${SERVICE_MKDOCS_PORT}"
-    log_info "  - Portainer: http://${CONTROL_VM_IP}:${SERVICE_PORTAINER_PORT}"
-    log_info "  - AWX: http://${CONTROL_VM_IP}:${SERVICE_AWX_PORT}"
-    log_info "  - Vault: http://${CONTROL_VM_IP}:${SERVICE_VAULT_PORT}"
-    log_info "  - Registry: http://${CONTROL_VM_IP}:${SERVICE_REGISTRY_PORT}"
+    log_info "  - MkDocs: http://${CONTROL_VM_IP}:8000"
+    log_info "  - Portainer: http://${CONTROL_VM_IP}:9000"
+    log_info "  - AWX: http://${CONTROL_VM_IP}:8080"
+    log_info "  - Vault: http://${CONTROL_VM_IP}:8200"
+    log_info "  - Registry: http://${CONTROL_VM_IP}:5000"
 }

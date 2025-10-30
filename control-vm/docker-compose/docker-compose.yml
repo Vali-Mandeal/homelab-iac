@@ -1,0 +1,264 @@
+---
+# Control VM Services Stack
+# Location: /opt/homelab-iac/control-vm/docker-compose/docker-compose.yml
+# Purpose: All management and IaC services for the homelab
+# Network: ${CONTROL_VM_IP} (private network only)
+
+version: '3.8'
+
+# ============================================================================
+# SERVICES
+# ============================================================================
+
+services:
+
+  # --------------------------------------------------------------------------
+  # MkDocs Live Server - Documentation Portal
+  # --------------------------------------------------------------------------
+  mkdocs:
+    image: squidfunk/mkdocs-material:latest
+    container_name: mkdocs
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - /opt/homelab-iac/docs:/docs
+    command: serve --dev-addr=0.0.0.0:8000
+    networks:
+      - control-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # --------------------------------------------------------------------------
+  # Portainer - Docker Management UI
+  # --------------------------------------------------------------------------
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - portainer-data:/data
+    networks:
+      - control-net
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # --------------------------------------------------------------------------
+  # HashiCorp Vault - Secrets Management (Production Mode)
+  # --------------------------------------------------------------------------
+  vault:
+    image: hashicorp/vault:latest
+    container_name: vault
+    restart: unless-stopped
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_ADDR: http://0.0.0.0:8200
+      VAULT_API_ADDR: http://${CONTROL_VM_IP}:8200
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault-data:/vault/data
+      - vault-logs:/vault/logs
+      - ./configs/vault-config.hcl:/vault/config/vault.hcl:ro
+    command: server
+    networks:
+      - control-net
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # --------------------------------------------------------------------------
+  # Docker Registry - Private Container Registry
+  # --------------------------------------------------------------------------
+  registry:
+    image: registry:2
+    container_name: registry
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: "Homelab Docker Registry"
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+      REGISTRY_HTTP_ADDR: 0.0.0.0:5000
+    volumes:
+      - registry-data:/var/lib/registry
+      - ./configs/registry-auth:/auth:ro
+    networks:
+      - control-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/v2/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # --------------------------------------------------------------------------
+  # AWX PostgreSQL - Database for AWX
+  # --------------------------------------------------------------------------
+  awx-postgres:
+    image: postgres:15-alpine
+    container_name: awx-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${AWX_POSTGRES_DB:-awx}
+      POSTGRES_USER: ${AWX_POSTGRES_USER:-awx}
+      POSTGRES_PASSWORD: ${AWX_POSTGRES_PASSWORD}
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    volumes:
+      - awx-postgres-data:/var/lib/postgresql/data
+    networks:
+      - control-net
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AWX_POSTGRES_USER:-awx}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # --------------------------------------------------------------------------
+  # AWX Redis - Cache for AWX
+  # --------------------------------------------------------------------------
+  awx-redis:
+    image: redis:7-alpine
+    container_name: awx-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - awx-redis-data:/data
+    networks:
+      - control-net
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # --------------------------------------------------------------------------
+  # AWX Web - Ansible Web UI
+  # --------------------------------------------------------------------------
+  awx-web:
+    image: ansible/awx:24.6.1
+    container_name: awx-web
+    restart: unless-stopped
+    depends_on:
+      awx-postgres:
+        condition: service_healthy
+      awx-redis:
+        condition: service_healthy
+    ports:
+      - "8080:8052"
+    environment:
+      DATABASE_HOST: awx-postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${AWX_POSTGRES_DB:-awx}
+      DATABASE_USER: ${AWX_POSTGRES_USER:-awx}
+      DATABASE_PASSWORD: ${AWX_POSTGRES_PASSWORD}
+      REDIS_HOST: awx-redis
+      REDIS_PORT: 6379
+      SECRET_KEY: ${AWX_SECRET_KEY}
+      AWX_ADMIN_USER: ${AWX_ADMIN_USER:-admin}
+      AWX_ADMIN_PASSWORD: ${AWX_ADMIN_PASSWORD}
+    volumes:
+      - awx-projects:/var/lib/awx/projects
+      - awx-data:/var/lib/awx
+      - /opt/homelab-iac/ansible:/ansible:ro
+    networks:
+      - control-net
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8052/api/v2/ping/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # --------------------------------------------------------------------------
+  # AWX Task - Background Worker for AWX
+  # --------------------------------------------------------------------------
+  awx-task:
+    image: ansible/awx:24.6.1
+    container_name: awx-task
+    restart: unless-stopped
+    depends_on:
+      awx-postgres:
+        condition: service_healthy
+      awx-redis:
+        condition: service_healthy
+    environment:
+      DATABASE_HOST: awx-postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${AWX_POSTGRES_DB:-awx}
+      DATABASE_USER: ${AWX_POSTGRES_USER:-awx}
+      DATABASE_PASSWORD: ${AWX_POSTGRES_PASSWORD}
+      REDIS_HOST: awx-redis
+      REDIS_PORT: 6379
+      SECRET_KEY: ${AWX_SECRET_KEY}
+    volumes:
+      - awx-projects:/var/lib/awx/projects
+      - awx-data:/var/lib/awx
+      - /opt/homelab-iac/ansible:/ansible:ro
+    command: /usr/bin/launch_awx_task.sh
+    networks:
+      - control-net
+    security_opt:
+      - no-new-privileges:true
+
+# ============================================================================
+# VOLUMES
+# ============================================================================
+
+volumes:
+  portainer-data:
+    driver: local
+  vault-data:
+    driver: local
+  vault-logs:
+    driver: local
+  registry-data:
+    driver: local
+  awx-postgres-data:
+    driver: local
+  awx-redis-data:
+    driver: local
+  awx-projects:
+    driver: local
+  awx-data:
+    driver: local
+
+# ============================================================================
+# NETWORKS
+# ============================================================================
+
+networks:
+  control-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

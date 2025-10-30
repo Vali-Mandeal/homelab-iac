@@ -1,0 +1,40 @@
+# ==============================================================================
+# Systemd Service - Control VM Services
+# ==============================================================================
+# Installation: sudo cp control-vm-services.service /etc/systemd/system/
+#              sudo systemctl enable control-vm-services
+#              sudo systemctl start control-vm-services
+# ==============================================================================
+
+[Unit]
+Description=Control VM Docker Compose Services
+Documentation=file:///opt/homelab-iac/control-vm/README.md
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/homelab-iac/control-vm/docker-compose
+ExecStartPre=/usr/bin/docker compose pull --quiet
+ExecStart=/usr/bin/docker compose up -d --remove-orphans
+ExecStop=/usr/bin/docker compose down
+ExecReload=/usr/bin/docker compose pull --quiet
+ExecReload=/usr/bin/docker compose up -d --remove-orphans
+
+# Restart policy
+Restart=on-failure
+RestartSec=30s
+
+# Security
+User=root
+Group=root
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=control-vm-services
+
+[Install]
+WantedBy=multi-user.target

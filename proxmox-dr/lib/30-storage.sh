@@ -210,7 +210,7 @@ setup_storage_mounts() {
 
     # Configure NFS mount
     log_info "Configuring NFS mount..."
-    add_nfs_to_fstab "$NFS_PUBLIC_MEDIA_MOUNT" "$UNAS_PUBLIC_IP" "$NFS_SHARE_NAME"
+    add_nfs_to_fstab "$NFS_PUBLIC_MEDIA_MOUNT" "$UNAS_PUBLIC_IP" "$NFS_PUBLIC_MEDIA_SHARE_NAME"
 
     # Configure SMB mounts (with credentials)
     log_info "Configuring SMB mount for private data..."
@@ -227,7 +227,7 @@ setup_storage_mounts() {
 
     log_info "Storage mounts configured successfully"
     log_info "Summary:"
-    log_info "  - NFS: $NFS_PUBLIC_MEDIA_MOUNT ($NFS_SHARE_NAME)"
+    log_info "  - NFS: $NFS_PUBLIC_MEDIA_MOUNT ($NFS_PUBLIC_MEDIA_SHARE_NAME)"
     log_info "  - SMB: $SMB_PRIVATE_MOUNT ($SMB_PRIVATE_SHARE_NAME)"
     log_info "  - SMB: $SMB_PUBLIC_MOUNT ($SMB_PUBLIC_SHARE_NAME)"
 }
