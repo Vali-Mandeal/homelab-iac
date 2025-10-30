@@ -18,9 +18,9 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly PROJECT_ROOT="/opt/homelab-iac"
 readonly COMPOSE_DIR="${PROJECT_ROOT}/control-vm/docker-compose"
 readonly BACKUP_MOUNT="/mnt/backup"
-readonly UNAS_PRIVATE_IP="${UNAS_PRIVATE_IP}"
+readonly UNAS_PRIVATE_IP="${UNAS_PRIVATE_IP:-10.100.100.100}"
 readonly UNAS_SHARE="private_servers_data"
-readonly SMB_USERNAME="YOUR_SMB_USERNAME"
+readonly SMB_USERNAME="${SMB_USERNAME:-YOUR_SMB_USERNAME}"
 
 # Colors for output
 readonly RED='\033[0;31m'
