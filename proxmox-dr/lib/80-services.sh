@@ -35,9 +35,15 @@ deploy_control_vm_stack() {
     log_info "Running Control VM setup script (this will take 15-30 minutes)..."
     log_info "Installing Docker, IaC tools, and deploying services..."
 
-    # Run the setup script on Control VM
-    # Note: Setup script requires root, so we sudo it
-    if ssh_to_vm "$ssh_target" "cd /opt/homelab-iac/control-vm/scripts && sudo ./setup-control-vm.sh"; then
+    # Run the setup script on Control VM with SMB credentials from config
+    # Note: Setup script requires root, so we sudo it with -E to preserve environment
+    log_info "Passing SMB credentials for automated backup configuration..."
+    if ssh_to_vm "$ssh_target" "cd /opt/homelab-iac/control-vm/scripts && \
+        sudo SMB_USERNAME='${SMB_USERNAME}' \
+        SMB_PASSWORD='${SMB_PASSWORD}' \
+        UNAS_PRIVATE_IP='${UNAS_PRIVATE_IP}' \
+        AUTO_CONFIRM=true \
+        ./setup-control-vm.sh"; then
         log_info "Control VM services deployed successfully"
         print_service_urls
     else

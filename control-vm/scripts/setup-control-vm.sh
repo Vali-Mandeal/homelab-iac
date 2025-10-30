@@ -20,7 +20,8 @@ readonly COMPOSE_DIR="${PROJECT_ROOT}/control-vm/docker-compose"
 readonly BACKUP_MOUNT="/mnt/backup"
 readonly UNAS_PRIVATE_IP="${UNAS_PRIVATE_IP:-10.100.100.100}"
 readonly UNAS_SHARE="private_servers_data"
-readonly SMB_USERNAME="${SMB_USERNAME:-YOUR_SMB_USERNAME}"
+readonly SMB_USERNAME="${SMB_USERNAME:-proxmox.server}"
+readonly SMB_PASSWORD="${SMB_PASSWORD:-}"  
 readonly CONTROL_VM_USER="${CONTROL_VM_USER:-admin}"
 
 # Colors for output
@@ -107,20 +108,35 @@ setup_backup_mount() {
 
     # Create credentials file (secure permissions)
     local creds_file="/root/.smb-credentials"
-    if [[ ! -f "${creds_file}" ]]; then
-        log_warn "SMB credentials file not found. Creating template..."
+
+    # Auto-configure if SMB_PASSWORD is provided (from Proxmox DR or environment)
+    if [[ -n "${SMB_PASSWORD}" ]]; then
+        log_info "Auto-configuring SMB credentials from environment..."
+        cat > "${creds_file}" <<EOF
+username=${SMB_USERNAME}
+password=${SMB_PASSWORD}
+EOF
+        chmod 600 "${creds_file}"
+        log_info "SMB credentials configured automatically"
+    elif [[ ! -f "${creds_file}" ]]; then
+        # Fallback for manual setup - create template
+        log_warn "SMB credentials file not found and SMB_PASSWORD not provided"
+        log_warn "Creating template credentials file..."
         cat > "${creds_file}" <<EOF
 username=${SMB_USERNAME}
 password=CHANGEME
 EOF
         chmod 600 "${creds_file}"
         log_error "Please edit ${creds_file} with the correct password"
-        log_error "Password is: CHANGEME_SMB_PASSWORD"
+        log_error "Or re-run with: SMB_PASSWORD=yourpassword sudo -E ./setup-control-vm.sh"
         prompt_continue "Have you updated the credentials file?"
+    else
+        log_info "SMB credentials file already exists: ${creds_file}"
     fi
 
     # Add to /etc/fstab if not already present
-    local fstab_entry="//${UNAS_PRIVATE_IP}/${UNAS_SHARE} ${BACKUP_MOUNT} cifs credentials=${creds_file},uid=0,gid=0,file_mode=0640,dir_mode=0750,iocharset=utf8 0 0"
+    # Note: Using vers=3.0 for SMB3, removed iocharset=utf8 (not available in Ubuntu 24.04)
+    local fstab_entry="//${UNAS_PRIVATE_IP}/${UNAS_SHARE} ${BACKUP_MOUNT} cifs credentials=${creds_file},uid=0,gid=0,file_mode=0640,dir_mode=0750,vers=3.0,nofail 0 0"
 
     if ! grep -q "${BACKUP_MOUNT}" /etc/fstab; then
         log_info "Adding SMB mount to /etc/fstab..."
