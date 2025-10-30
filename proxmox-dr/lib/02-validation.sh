@@ -26,8 +26,11 @@ validate_config() {
         "PUBLIC_VLAN_TAG"
         "UNAS_PRIVATE_IP"
         "UNAS_PUBLIC_IP"
-        "NFS_PRIVATE_SHARE"
-        "NFS_PUBLIC_SHARE"
+        "NFS_PUBLIC_MEDIA_MOUNT"
+        "SMB_PRIVATE_MOUNT"
+        "SMB_PUBLIC_MOUNT"
+        "SMB_USERNAME"
+        "SMB_PASSWORD"
         "CONTROL_VM_IP"
         "SSH_PUBLIC_KEY_PATH"
     )
@@ -45,13 +48,6 @@ validate_config() {
         for var in "${missing_vars[@]}"; do
             log_error "  - $var"
         done
-        return 1
-    fi
-
-    # Validate SSH public key exists
-    if [[ ! -f "$SSH_PUBLIC_KEY_PATH" ]]; then
-        log_error "SSH public key not found at: $SSH_PUBLIC_KEY_PATH"
-        log_info "Generate one with: ssh-keygen -t rsa -b 4096"
         return 1
     fi
 

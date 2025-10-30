@@ -4,6 +4,12 @@
 # Deploy Docker Compose stack on Control VM
 #
 
+PROXMOX_AUTOMATION_KEY="${PROXMOX_AUTOMATION_KEY:-/root/.ssh/homelab_control}"
+
+ssh_to_vm() {
+    ssh -i "$PROXMOX_AUTOMATION_KEY" -o StrictHostKeyChecking=no "$@"
+}
+
 deploy_control_vm_stack() {
     log_section "Deploying Control VM Docker Compose Stack"
 
@@ -15,7 +21,7 @@ deploy_control_vm_stack() {
     local ssh_target="${CONTROL_VM_USER}@${CONTROL_VM_IP}"
 
     log_info "Deploying AWX, MkDocs, Portainer, Vault, and Registry..."
-    ssh "$ssh_target" "
+    ssh_to_vm "$ssh_target" "
         cd /opt/homelab-iac/docker-compose 2>/dev/null || {
             echo 'Docker Compose directory not found, skipping stack deployment'
             exit 0

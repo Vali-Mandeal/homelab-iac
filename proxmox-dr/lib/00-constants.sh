@@ -9,7 +9,7 @@
 # ==============================================================================
 
 readonly DEFAULT_UBUNTU_TEMPLATE_ID="9000"
-readonly DEFAULT_CONTROL_VM_ID="100"
+readonly DEFAULT_CONTROL_VM_ID="101"
 
 # ==============================================================================
 # UBUNTU CLOUD IMAGE
@@ -39,8 +39,8 @@ readonly DEFAULT_DNS_SERVERS="1.1.1.1,8.8.8.8"
 # STORAGE
 # ==============================================================================
 
-readonly DEFAULT_PRIVATE_MOUNT_POINT="/mnt/private-data"
-readonly DEFAULT_PUBLIC_MOUNT_POINT="/mnt/public-data"
+readonly SMB_PRIVATE_CREDENTIALS="/root/.smbcredentials_private"
+readonly SMB_PUBLIC_CREDENTIALS="/root/.smbcredentials_public"
 readonly DEFAULT_CONTROL_VM_STORAGE="local-lvm"
 
 # ==============================================================================

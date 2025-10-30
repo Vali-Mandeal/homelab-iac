@@ -23,8 +23,9 @@ print_summary() {
     echo "  - Vault: http://${CONTROL_VM_IP}:${SERVICE_VAULT_PORT}"
     echo "  - Docker Registry: http://${CONTROL_VM_IP}:${SERVICE_REGISTRY_PORT}"
     echo ""
-    echo "NFS Mounts (on Proxmox host):"
-    echo "  - Private: ${PRIVATE_MOUNT_POINT}"
-    echo "  - Public: ${PUBLIC_MOUNT_POINT}"
+    echo "Storage Mounts (on Proxmox host):"
+    echo "  - NFS Public Media: ${NFS_PUBLIC_MEDIA_MOUNT}"
+    echo "  - SMB Private Data: ${SMB_PRIVATE_MOUNT}"
+    echo "  - SMB Public Data (SSD): ${SMB_PUBLIC_MOUNT}"
     echo ""
 }

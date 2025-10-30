@@ -225,19 +225,26 @@ execute_remote_setup() {
     log_info "Making scripts executable..."
     ssh $ssh_key_opt -p "$SSH_PORT" "$SSH_TARGET" "chmod +x '${REMOTE_DIR}/run-setup.sh' '${REMOTE_DIR}/lib/'*.sh"
 
+    # Read SSH public key content to pass to remote script
+    local ssh_pub_key_content=""
+    if [[ -f "${SSH_PUBLIC_KEY_PATH}" ]]; then
+        ssh_pub_key_content=$(cat "${SSH_PUBLIC_KEY_PATH}")
+    fi
+
     log_info "Starting Proxmox DR setup on remote host..."
     log_info "This will take 15-30 minutes. Output will stream below."
     echo ""
 
     # Execute remote script and stream output
     # Use -t to allocate pseudo-TTY for colored output
-    if ssh $ssh_key_opt -t -p "$SSH_PORT" "$SSH_TARGET" "cd '${REMOTE_DIR}' && sudo ./run-setup.sh"; then
+    # Export SSH key content as environment variable for remote script
+    if ssh $ssh_key_opt -t -p "$SSH_PORT" "$SSH_TARGET" "export SSH_PUBLIC_KEY_CONTENT='${ssh_pub_key_content}' && cd '${REMOTE_DIR}' && ./run-setup.sh"; then
         log_info "Remote setup completed successfully"
         return 0
     else
         log_error "Remote setup failed"
         log_warn "Remote files are preserved at: ${REMOTE_DIR}"
-        log_warn "To debug: ssh $ssh_key_opt -p ${SSH_PORT} ${SSH_TARGET} 'cd ${REMOTE_DIR} && sudo ./run-setup.sh'"
+        log_warn "To debug: ssh $ssh_key_opt -p ${SSH_PORT} ${SSH_TARGET} 'cd ${REMOTE_DIR} && ./run-setup.sh'"
         return 1
     fi
 }

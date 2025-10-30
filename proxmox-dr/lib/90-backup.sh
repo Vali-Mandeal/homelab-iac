@@ -4,6 +4,12 @@
 # Setup Terraform state backups
 #
 
+PROXMOX_AUTOMATION_KEY="${PROXMOX_AUTOMATION_KEY:-/root/.ssh/homelab_control}"
+
+ssh_to_vm() {
+    ssh -i "$PROXMOX_AUTOMATION_KEY" -o StrictHostKeyChecking=no "$@"
+}
+
 create_backup_directory() {
     local backup_dir="$1"
     mkdir -p "$backup_dir"
@@ -13,7 +19,7 @@ create_backup_script() {
     local ssh_target="$1"
     local backup_dir="$2"
 
-    ssh "$ssh_target" "
+    ssh_to_vm "$ssh_target" "
         echo '#!/bin/bash' | sudo tee /usr/local/bin/backup-terraform-state.sh
         echo 'rsync -av /opt/homelab-iac/terraform/*.tfstate ${backup_dir}/ || true' | sudo tee -a /usr/local/bin/backup-terraform-state.sh
         sudo chmod +x /usr/local/bin/backup-terraform-state.sh
@@ -23,7 +29,7 @@ create_backup_script() {
 add_backup_cron_job() {
     local ssh_target="$1"
 
-    ssh "$ssh_target" "
+    ssh_to_vm "$ssh_target" "
         (crontab -l 2>/dev/null; echo '0 2 * * * /usr/local/bin/backup-terraform-state.sh') | crontab -
     "
 }
@@ -36,7 +42,7 @@ backup_terraform_state() {
         return 0
     fi
 
-    local backup_dir="${PRIVATE_MOUNT_POINT}/terraform-state-backups"
+    local backup_dir="${SMB_PRIVATE_MOUNT}/terraform-state-backups"
     local ssh_target="${CONTROL_VM_USER}@${CONTROL_VM_IP}"
 
     create_backup_directory "$backup_dir"

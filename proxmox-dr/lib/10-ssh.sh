@@ -25,12 +25,13 @@ add_ssh_key_to_authorized_keys() {
 setup_ssh_access() {
     log_section "Setting Up SSH Key-Based Authentication"
 
-    local ssh_key_content
-    ssh_key_content=$(cat "$SSH_PUBLIC_KEY_PATH")
+    if [[ -z "${SSH_PUBLIC_KEY_CONTENT:-}" ]]; then
+        log_info "SSH key already configured by deploy script, skipping"
+        return 0
+    fi
 
     create_ssh_directory
-    add_ssh_key_to_authorized_keys "$ssh_key_content"
+    add_ssh_key_to_authorized_keys "$SSH_PUBLIC_KEY_CONTENT"
 
     log_info "SSH configuration complete"
-    log_warn "For enhanced security, disable password authentication in $SSH_CONFIG_FILE"
 }

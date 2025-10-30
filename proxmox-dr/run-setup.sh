@@ -52,8 +52,6 @@ load_config() {
     CONTROL_VM_STORAGE="${CONTROL_VM_STORAGE:-$DEFAULT_CONTROL_VM_STORAGE}"
     PRIVATE_NETWORK_BRIDGE="${PRIVATE_NETWORK_BRIDGE:-$DEFAULT_PRIVATE_NETWORK_BRIDGE}"
     PUBLIC_NETWORK_BRIDGE="${PUBLIC_NETWORK_BRIDGE:-$DEFAULT_PUBLIC_NETWORK_BRIDGE}"
-    PRIVATE_MOUNT_POINT="${PRIVATE_MOUNT_POINT:-$DEFAULT_PRIVATE_MOUNT_POINT}"
-    PUBLIC_MOUNT_POINT="${PUBLIC_MOUNT_POINT:-$DEFAULT_PUBLIC_MOUNT_POINT}"
     TERRAFORM_VERSION="${TERRAFORM_VERSION:-$DEFAULT_TERRAFORM_VERSION}"
     ANSIBLE_VERSION="${ANSIBLE_VERSION:-$DEFAULT_ANSIBLE_VERSION}"
     PACKER_VERSION="${PACKER_VERSION:-$DEFAULT_PACKER_VERSION}"
@@ -99,56 +97,42 @@ main() {
     echo ""
     echo "╔════════════════════════════════════════════════════════════════╗"
     echo "║                                                                ║"
-    echo "║          Proxmox Disaster Recovery Setup                      ║"
-    echo "║          Enterprise-Grade Homelab Infrastructure               ║"
+    echo "║          Proxmox Disaster Recovery Setup                       ║"
+    echo "║          Homelab Infrastructure                                ║"
     echo "║                                                                ║"
     echo "╚════════════════════════════════════════════════════════════════╝"
     echo ""
 
-    # Load configuration
     load_config
 
-    # Pre-flight checks
     preflight_checks
 
-    # Validate configuration
     validate_config
 
     log_info "Proxmox Host: $PROXMOX_HOSTNAME ($PROXMOX_HOST_IP)"
     log_info "Control VM will be deployed at: $CONTROL_VM_IP"
     echo ""
 
-    # Step 1: Configure Proxmox repositories
     configure_proxmox_repositories
 
-    # Step 2: Upgrade packages
     upgrade_proxmox_packages
 
-    # Step 3: Configure SSH access
     setup_ssh_access
 
-    # Step 4: Configure network bridges
     configure_network_bridges
 
-    # Step 5: Setup NFS mounts to UNAS
-    setup_nfs_mounts
+    setup_storage_mounts
 
-    # Step 6: Create Ubuntu cloud-init template
     create_ubuntu_template
 
-    # Step 7: Deploy Control VM
     deploy_control_vm
 
-    # Step 8: Setup Control VM (install IaC tools)
     setup_control_vm
 
-    # Step 9: Deploy Docker Compose stack on Control VM
     deploy_control_vm_stack
 
-    # Step 10: Configure Terraform state backup
     backup_terraform_state
 
-    # Print summary
     print_summary
 
     log_info "Proxmox DR setup completed successfully!"
@@ -158,8 +142,6 @@ main() {
 # SCRIPT ENTRY POINT
 # ==============================================================================
 
-# Trap errors
 trap 'log_error "Script failed at line $LINENO"' ERR
 
-# Run main function
 main "$@"

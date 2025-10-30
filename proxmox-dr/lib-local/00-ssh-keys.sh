@@ -145,6 +145,7 @@ Host control-vm control
     HostName ${CONTROL_VM_IP}
     User ${CONTROL_VM_USER}
     IdentityFile ${SSH_KEY_PATH}
+    IdentitiesOnly yes
     ServerAliveInterval 60
     ServerAliveCountMax 3
 EOF
@@ -152,6 +153,7 @@ EOF
     chmod 600 "$ssh_config_file"
     log_info "SSH config updated: $ssh_config_file"
     log_info "You can now use: ssh proxmox"
+    log_info "After deployment: ssh control-vm (or ssh control)"
 }
 
 # ==============================================================================
