@@ -226,6 +226,10 @@ deploy_control_vm() {
     resize_vm_disk "$vm_id" "$CONTROL_VM_DISK"
     start_vm "$vm_id"
 
+    # Remove old SSH host key from known_hosts (VM was destroyed/recreated)
+    log_info "Removing old SSH host key for ${CONTROL_VM_IP}..."
+    ssh-keygen -R "${CONTROL_VM_IP}" 2>/dev/null || true
+
     # Wait for ubuntu user (cloud-init default)
     wait_for_vm_ready "ubuntu"
 

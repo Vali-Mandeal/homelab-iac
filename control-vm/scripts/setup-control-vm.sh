@@ -386,7 +386,7 @@ initialize_vault() {
 
     # Check if Vault is already initialized
     local init_status
-    init_status=$(curl -sf http://localhost:8200/v2/sys/init | jq -r '.initialized')
+    init_status=$(curl -sf http://localhost:8200/v1/sys/init | jq -r '.initialized')
 
     if [[ "$init_status" == "true" ]]; then
         log_info "Vault is already initialized"
