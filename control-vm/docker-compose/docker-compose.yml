@@ -22,7 +22,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - /opt/homelab-iac/docs:/docs
+      - /opt/homelab-iac:/docs
     command: serve --dev-addr=0.0.0.0:8000
     networks:
       - control-net
@@ -113,122 +113,127 @@ services:
       start_period: 10s
 
   # --------------------------------------------------------------------------
-  # AWX PostgreSQL - Database for AWX
+  # AWX Services - Disabled (requires x86-64-v2 CPU support)
   # --------------------------------------------------------------------------
-  awx-postgres:
-    image: postgres:15-alpine
-    container_name: awx-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${AWX_POSTGRES_DB:-awx}
-      POSTGRES_USER: ${AWX_POSTGRES_USER:-awx}
-      POSTGRES_PASSWORD: ${AWX_POSTGRES_PASSWORD}
-      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
-      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
-    volumes:
-      - awx-postgres-data:/var/lib/postgresql/data
-    networks:
-      - control-net
-    security_opt:
-      - no-new-privileges:true
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${AWX_POSTGRES_USER:-awx}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+  # NOTE: AWX containers require a modern CPU with x86-64-v2 instruction set
+  # If your Proxmox VM uses "Common KVM processor" CPU type, AWX will fail
+  # To enable AWX, change VM CPU type in Proxmox to "host" or "x86-64-v2-AES"
+  # --------------------------------------------------------------------------
+
+  # awx-postgres:
+  #   image: postgres:15-alpine
+  #   container_name: awx-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: ${AWX_POSTGRES_DB:-awx}
+  #     POSTGRES_USER: ${AWX_POSTGRES_USER:-awx}
+  #     POSTGRES_PASSWORD: ${AWX_POSTGRES_PASSWORD}
+  #     POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+  #     POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+  #   volumes:
+  #     - awx-postgres-data:/var/lib/postgresql/data
+  #   networks:
+  #     - control-net
+  #   security_opt:
+  #     - no-new-privileges:true
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${AWX_POSTGRES_USER:-awx}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 30s
 
   # --------------------------------------------------------------------------
   # AWX Redis - Cache for AWX
   # --------------------------------------------------------------------------
-  awx-redis:
-    image: redis:7-alpine
-    container_name: awx-redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-    volumes:
-      - awx-redis-data:/data
-    networks:
-      - control-net
-    security_opt:
-      - no-new-privileges:true
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+  # awx-redis:
+  #   image: redis:7-alpine
+  #   container_name: awx-redis
+  #   restart: unless-stopped
+  #   command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+  #   volumes:
+  #     - awx-redis-data:/data
+  #   networks:
+  #     - control-net
+  #   security_opt:
+  #     - no-new-privileges:true
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
 
   # --------------------------------------------------------------------------
   # AWX Web - Ansible Web UI
   # --------------------------------------------------------------------------
-  awx-web:
-    image: ansible/awx:24.6.1
-    container_name: awx-web
-    restart: unless-stopped
-    depends_on:
-      awx-postgres:
-        condition: service_healthy
-      awx-redis:
-        condition: service_healthy
-    ports:
-      - "8080:8052"
-    environment:
-      DATABASE_HOST: awx-postgres
-      DATABASE_PORT: 5432
-      DATABASE_NAME: ${AWX_POSTGRES_DB:-awx}
-      DATABASE_USER: ${AWX_POSTGRES_USER:-awx}
-      DATABASE_PASSWORD: ${AWX_POSTGRES_PASSWORD}
-      REDIS_HOST: awx-redis
-      REDIS_PORT: 6379
-      SECRET_KEY: ${AWX_SECRET_KEY}
-      AWX_ADMIN_USER: ${AWX_ADMIN_USER:-admin}
-      AWX_ADMIN_PASSWORD: ${AWX_ADMIN_PASSWORD}
-    volumes:
-      - awx-projects:/var/lib/awx/projects
-      - awx-data:/var/lib/awx
-      - /opt/homelab-iac/ansible:/ansible:ro
-    networks:
-      - control-net
-    security_opt:
-      - no-new-privileges:true
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8052/api/v2/ping/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+  # awx-web:
+  #   image: ghcr.io/ansible/awx_devel:devel
+  #   container_name: awx-web
+  #   restart: unless-stopped
+  #   depends_on:
+  #     awx-postgres:
+  #       condition: service_healthy
+  #     awx-redis:
+  #       condition: service_healthy
+  #   ports:
+  #     - "8080:8052"
+  #   environment:
+  #     DATABASE_HOST: awx-postgres
+  #     DATABASE_PORT: 5432
+  #     DATABASE_NAME: ${AWX_POSTGRES_DB:-awx}
+  #     DATABASE_USER: ${AWX_POSTGRES_USER:-awx}
+  #     DATABASE_PASSWORD: ${AWX_POSTGRES_PASSWORD}
+  #     REDIS_HOST: awx-redis
+  #     REDIS_PORT: 6379
+  #     SECRET_KEY: ${AWX_SECRET_KEY}
+  #     AWX_ADMIN_USER: ${AWX_ADMIN_USER:-admin}
+  #     AWX_ADMIN_PASSWORD: ${AWX_ADMIN_PASSWORD}
+  #   volumes:
+  #     - awx-projects:/var/lib/awx/projects
+  #     - awx-data:/var/lib/awx
+  #     - /opt/homelab-iac/ansible:/ansible:ro
+  #   networks:
+  #     - control-net
+  #   security_opt:
+  #     - no-new-privileges:true
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8052/api/v2/ping/"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 60s
 
   # --------------------------------------------------------------------------
   # AWX Task - Background Worker for AWX
   # --------------------------------------------------------------------------
-  awx-task:
-    image: ansible/awx:24.6.1
-    container_name: awx-task
-    restart: unless-stopped
-    depends_on:
-      awx-postgres:
-        condition: service_healthy
-      awx-redis:
-        condition: service_healthy
-    environment:
-      DATABASE_HOST: awx-postgres
-      DATABASE_PORT: 5432
-      DATABASE_NAME: ${AWX_POSTGRES_DB:-awx}
-      DATABASE_USER: ${AWX_POSTGRES_USER:-awx}
-      DATABASE_PASSWORD: ${AWX_POSTGRES_PASSWORD}
-      REDIS_HOST: awx-redis
-      REDIS_PORT: 6379
-      SECRET_KEY: ${AWX_SECRET_KEY}
-    volumes:
-      - awx-projects:/var/lib/awx/projects
-      - awx-data:/var/lib/awx
-      - /opt/homelab-iac/ansible:/ansible:ro
-    command: /usr/bin/launch_awx_task.sh
-    networks:
-      - control-net
-    security_opt:
-      - no-new-privileges:true
+  # awx-task:
+  #   image: ghcr.io/ansible/awx_devel:devel
+  #   container_name: awx-task
+  #   restart: unless-stopped
+  #   depends_on:
+  #     awx-postgres:
+  #       condition: service_healthy
+  #     awx-redis:
+  #       condition: service_healthy
+  #   environment:
+  #     DATABASE_HOST: awx-postgres
+  #     DATABASE_PORT: 5432
+  #     DATABASE_NAME: ${AWX_POSTGRES_DB:-awx}
+  #     DATABASE_USER: ${AWX_POSTGRES_USER:-awx}
+  #     DATABASE_PASSWORD: ${AWX_POSTGRES_PASSWORD}
+  #     REDIS_HOST: awx-redis
+  #     REDIS_PORT: 6379
+  #     SECRET_KEY: ${AWX_SECRET_KEY}
+  #   volumes:
+  #     - awx-projects:/var/lib/awx/projects
+  #     - awx-data:/var/lib/awx
+  #     - /opt/homelab-iac/ansible:/ansible:ro
+  #   command: /usr/bin/launch_awx_task.sh
+  #   networks:
+  #     - control-net
+  #   security_opt:
+  #     - no-new-privileges:true
 
 # ============================================================================
 # VOLUMES

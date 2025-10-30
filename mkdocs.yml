@@ -4,6 +4,8 @@ site_author: Homelab Documentation
 repo_url: https://github.com/yourusername/homelab-iac
 repo_name: homelab-iac
 
+docs_dir: docs
+
 theme:
   name: material
   palette:

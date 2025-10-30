@@ -21,6 +21,7 @@ readonly BACKUP_MOUNT="/mnt/backup"
 readonly UNAS_PRIVATE_IP="${UNAS_PRIVATE_IP:-10.100.100.100}"
 readonly UNAS_SHARE="private_servers_data"
 readonly SMB_USERNAME="${SMB_USERNAME:-YOUR_SMB_USERNAME}"
+readonly CONTROL_VM_USER="${CONTROL_VM_USER:-admin}"
 
 # Colors for output
 readonly RED='\033[0;31m'
@@ -53,6 +54,11 @@ check_root() {
 
 prompt_continue() {
     local message="$1"
+    # Skip prompt if running non-interactively or AUTO_CONFIRM is set
+    if [[ "${AUTO_CONFIRM:-false}" == "true" ]] || [[ ! -t 0 ]]; then
+        log_info "${message} (auto-confirmed)"
+        return 0
+    fi
     read -rp "${message} (y/n): " choice
     case "$choice" in
         y|Y ) return 0 ;;
@@ -168,9 +174,22 @@ install_docker() {
     systemctl enable docker
     systemctl start docker
 
+    # Add CONTROL_VM_USER and current sudo user to docker group
+    if [[ -n "${CONTROL_VM_USER:-}" ]]; then
+        usermod -aG docker "${CONTROL_VM_USER}" || true
+        log_info "Added ${CONTROL_VM_USER} to docker group"
+    fi
+
+    # Also add the user who ran sudo (if different)
+    if [[ -n "${SUDO_USER:-}" ]] && [[ "${SUDO_USER}" != "${CONTROL_VM_USER:-}" ]]; then
+        usermod -aG docker "${SUDO_USER}" || true
+        log_info "Added ${SUDO_USER} to docker group"
+    fi
+
     # Verify installation
     docker --version
     log_info "Docker installed successfully"
+    log_warn "Users added to docker group - they need to log out and back in for group changes to take effect"
 }
 
 # ------------------------------------------------------------------------------
@@ -299,10 +318,15 @@ setup_docker_compose() {
 
     if [[ ! -f "configs/registry-auth/htpasswd" ]]; then
         log_info "Creating registry htpasswd file..."
-        read -rp "Enter username for Docker Registry [bmad]: " registry_user
-        registry_user=${registry_user:-bmad}
-        htpasswd -Bc configs/registry-auth/htpasswd "${registry_user}"
+        local registry_user="bmad"
+        local registry_password=$(openssl rand -base64 16)
+
+        # Use htpasswd non-interactively with -Bbn (bcrypt, batch mode, stdout)
+        htpasswd -Bbn "${registry_user}" "${registry_password}" > configs/registry-auth/htpasswd
+
         log_info "Registry authentication configured for user: ${registry_user}"
+        log_info "Registry password: ${registry_password}"
+        log_warn "IMPORTANT: Save this password! It won't be displayed again."
     fi
 
     # Pull images
