@@ -353,6 +353,12 @@ setup_docker_compose() {
     log_info "Starting services..."
     docker compose up -d
 
+    # Fix Vault data directory permissions (Vault needs write access)
+    log_info "Fixing Vault volume permissions..."
+    docker compose stop vault
+    docker run --rm -v docker-compose_vault-data:/vault/data alpine sh -c "chown -R 100:1000 /vault/data && chmod -R 755 /vault/data"
+    docker compose start vault
+
     # Wait for services to be healthy
     log_info "Waiting for services to become healthy..."
     sleep 10
