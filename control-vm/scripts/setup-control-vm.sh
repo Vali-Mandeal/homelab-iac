@@ -431,10 +431,13 @@ initialize_vault() {
     log_info "Unsealing Vault..."
     for i in {0..2}; do
         local unseal_key
-        unseal_key=$(echo "${vault_init}" | jq -r ".unseal_keys_b64[$i]")
-        curl -sf --request POST \
+        unseal_key=$(echo "${vault_init}" | jq -r ".keys_base64[$i]")
+        curl -s --request POST \
             --data "{\"key\": \"${unseal_key}\"}" \
-            http://localhost:8200/v1/sys/unseal > /dev/null
+            http://localhost:8200/v1/sys/unseal > /dev/null || {
+            log_error "Failed to unseal with key $((i+1))"
+            return 1
+        }
         log_info "Unsealed with key $((i+1))/3"
     done
 
