@@ -4,7 +4,7 @@
 # ==============================================================================
 # Purpose: Initialize Control VM with all IaC tools and services
 # Target: Ubuntu 24.04 LTS
-# Network: ${CONTROL_VM_IP} (private network)
+# Network: Auto-detects IP address (private network)
 # Usage: sudo ./setup-control-vm.sh
 # ==============================================================================
 
@@ -21,8 +21,13 @@ readonly BACKUP_MOUNT="/mnt/backup"
 readonly UNAS_PRIVATE_IP="${UNAS_PRIVATE_IP:-10.100.100.100}"
 readonly UNAS_SHARE="private_servers_data"
 readonly SMB_USERNAME="${SMB_USERNAME:-proxmox.server}"
-readonly SMB_PASSWORD="${SMB_PASSWORD:-}"  
+readonly SMB_PASSWORD="${SMB_PASSWORD:-}"
 readonly CONTROL_VM_USER="${CONTROL_VM_USER:-admin}"
+
+# Auto-detect Control VM IP (fallback to localhost if not found)
+CONTROL_VM_IP="${CONTROL_VM_IP:-$(hostname -I | awk '{print $1}')}"
+CONTROL_VM_IP="${CONTROL_VM_IP:-localhost}"
+readonly CONTROL_VM_IP
 
 # Colors for output
 readonly RED='\033[0;31m'
