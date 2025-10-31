@@ -58,32 +58,6 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Getting Started:
-      - Overview: getting-started/overview.md
-      - Prerequisites: getting-started/prerequisites.md
-      - Quick Start: getting-started/quick-start.md
-  - Architecture:
-      - Overview: architecture/overview.md
-      - Network Design: architecture/network.md
-      - Storage Strategy: architecture/storage.md
-      - Security Model: architecture/security.md
-  - Disaster Recovery:
-      - Proxmox DR Script: disaster-recovery/proxmox-dr.md
-      - Backup Strategy: disaster-recovery/backup-strategy.md
-      - Recovery Procedures: disaster-recovery/recovery-procedures.md
-  - Infrastructure:
-      - Terraform: infrastructure/terraform.md
-      - Ansible: infrastructure/ansible.md
-      - Packer: infrastructure/packer.md
-  - Services:
-      - Control VM: services/control-vm.md
-      - Third-Party Apps: services/third-party-apps.md
-      - Custom Applications: services/custom-applications.md
-  - Operations:
-      - Adding a Service: operations/add-service.md
-      - Updating VMs: operations/update-vms.md
-      - Troubleshooting: operations/troubleshooting.md
-  - Migration Guide: migration.md
 
 plugins:
   - search
