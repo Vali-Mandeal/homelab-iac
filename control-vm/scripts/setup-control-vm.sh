@@ -314,14 +314,9 @@ setup_docker_compose() {
 
     # Check for .env file
     if [[ ! -f ".env" ]]; then
-        log_warn ".env file not found"
-
         if [[ -f ".env.example" ]]; then
             cp .env.example .env
-            log_info "Created .env from .env.example"
-            log_error "Please edit .env file with secure passwords before continuing"
-            log_info "Run: vim ${COMPOSE_DIR}/.env"
-            prompt_continue "Have you configured the .env file?"
+            log_info "Created .env from template (contains placeholder passwords)"
         else
             log_error "No .env.example file found"
             return 1
@@ -334,15 +329,28 @@ setup_docker_compose() {
 
     if [[ ! -f "configs/registry-auth/htpasswd" ]]; then
         log_info "Creating registry htpasswd file..."
-        local registry_user="bmad"
+        local registry_user="admin"
         local registry_password=$(openssl rand -base64 16)
 
         # Use htpasswd non-interactively with -Bbn (bcrypt, batch mode, stdout)
         htpasswd -Bbn "${registry_user}" "${registry_password}" > configs/registry-auth/htpasswd
 
+        # Save credentials to backup location
+        if [[ -d "${BACKUP_MOUNT}" ]]; then
+            mkdir -p "${BACKUP_MOUNT}/credentials"
+            local timestamp=$(date +%Y%m%d_%H%M%S)
+            cat > "${BACKUP_MOUNT}/credentials/docker-registry-${timestamp}.txt" <<EOF
+Docker Registry Credentials
+Generated: $(date)
+Username: ${registry_user}
+Password: ${registry_password}
+EOF
+            chmod 600 "${BACKUP_MOUNT}/credentials/docker-registry-${timestamp}.txt"
+            log_info "Registry credentials saved to ${BACKUP_MOUNT}/credentials/"
+        fi
+
         log_info "Registry authentication configured for user: ${registry_user}"
         log_info "Registry password: ${registry_password}"
-        log_warn "IMPORTANT: Save this password! It won't be displayed again."
     fi
 
     # Pull images
