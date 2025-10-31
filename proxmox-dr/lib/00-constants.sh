@@ -33,7 +33,7 @@ readonly DEFAULT_PACKER_VERSION="1.11.2"
 
 readonly DEFAULT_PRIVATE_NETWORK_BRIDGE="vmbr0"
 readonly DEFAULT_PUBLIC_NETWORK_BRIDGE="vmbr1"
-readonly DEFAULT_DNS_SERVERS="1.1.1.1,8.8.8.8"
+readonly DEFAULT_DNS_SERVERS="1.1.1.1 8.8.8.8"
 
 # ==============================================================================
 # STORAGE

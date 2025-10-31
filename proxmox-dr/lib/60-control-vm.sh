@@ -89,6 +89,7 @@ configure_vm_resources() {
     qm set "$vm_id" \
         --cores "$CONTROL_VM_CPUS" \
         --memory "$CONTROL_VM_MEMORY" \
+        --cpu x86-64-v2-AES \
         --ipconfig0 "ip=${CONTROL_VM_IP}/24,gw=${GATEWAY_IP}" \
         --nameserver "$DNS_SERVERS" \
         --ciuser "$ciuser" \

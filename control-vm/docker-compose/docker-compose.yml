@@ -115,8 +115,7 @@ services:
   # --------------------------------------------------------------------------
   # AWX Services - Ansible Automation Platform
   # --------------------------------------------------------------------------
-  # NOTE: Using AWX 19.5.1 for compatibility with emulated CPU (kvm64)
-  # Newer versions (20.x+) require x86-64-v2 CPU instructions
+  # NOTE: Requires CPU type x86-64-v2-AES (Proxmox 9.0 default)
   # --------------------------------------------------------------------------
 
   awx-postgres:
@@ -167,7 +166,7 @@ services:
   # AWX Web - Ansible Web UI
   # --------------------------------------------------------------------------
   awx-web:
-    image: quay.io/ansible/awx:19.5.1
+    image: quay.io/ansible/awx:24.6.1
     container_name: awx-web
     restart: unless-stopped
     depends_on:
@@ -207,7 +206,7 @@ services:
   # AWX Task - Background Worker for AWX
   # --------------------------------------------------------------------------
   awx-task:
-    image: quay.io/ansible/awx:19.5.1
+    image: quay.io/ansible/awx:24.6.1
     container_name: awx-task
     restart: unless-stopped
     depends_on:

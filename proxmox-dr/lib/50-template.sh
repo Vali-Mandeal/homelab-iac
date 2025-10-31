@@ -54,6 +54,7 @@ configure_template_vm() {
         --bootdisk scsi0 \
         --serial0 socket \
         --vga serial0 \
+        --cpu x86-64-v2-AES \
         --agent enabled=1
 }
 

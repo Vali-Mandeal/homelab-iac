@@ -32,6 +32,9 @@ deploy_control_vm_stack() {
         return 0
     fi
 
+    log_info "Waiting for cloud-init to complete system updates..."
+    ssh_to_vm "$ssh_target" "sudo cloud-init status --wait" || log_warn "cloud-init wait completed with warnings (this is normal)"
+
     log_info "Running Control VM setup script (this will take 15-30 minutes)..."
     log_info "Installing Docker, IaC tools, and deploying services..."
 
