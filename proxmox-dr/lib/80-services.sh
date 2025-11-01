@@ -35,6 +35,16 @@ deploy_control_vm_stack() {
     log_info "Waiting for cloud-init to complete system updates..."
     ssh_to_vm "$ssh_target" "sudo cloud-init status --wait" || log_warn "cloud-init wait completed with warnings (this is normal)"
 
+    # Copy .env file if it exists locally
+    local local_env_file="${SCRIPT_DIR}/../control-vm/docker-compose/.env"
+    if [[ -f "$local_env_file" ]]; then
+        log_info "Copying .env file to Control VM..."
+        scp -i "${SSH_KEY_PATH}" "$local_env_file" "${ssh_target}:/tmp/.env"
+        ssh_to_vm "$ssh_target" "sudo mv /tmp/.env /opt/homelab-iac/control-vm/docker-compose/.env && sudo chmod 600 /opt/homelab-iac/control-vm/docker-compose/.env"
+    else
+        log_warn "No .env file found at $local_env_file - setup script will fail"
+    fi
+
     log_info "Running Control VM setup script (this will take 15-30 minutes)..."
     log_info "Installing Docker, IaC tools, and deploying services..."
 
