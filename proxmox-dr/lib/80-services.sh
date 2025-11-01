@@ -63,7 +63,7 @@ print_service_urls() {
     log_info "Access services at:"
     log_info "  - MkDocs: http://${CONTROL_VM_IP}:8000"
     log_info "  - Portainer: http://${CONTROL_VM_IP}:9000"
-    log_info "  - AWX: http://${CONTROL_VM_IP}:8080"
+    log_info "  - Semaphore: http://${CONTROL_VM_IP}:3000"
     log_info "  - Vault: http://${CONTROL_VM_IP}:8200"
     log_info "  - Registry: http://${CONTROL_VM_IP}:5000"
 }

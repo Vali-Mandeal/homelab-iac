@@ -13,7 +13,7 @@ set -euo pipefail
 # Configuration
 # ------------------------------------------------------------------------------
 
-readonly BACKUP_ROOT="/mnt/backup/control-vm-backups"
+readonly BACKUP_ROOT="/mnt/backup/control-vm/backups"
 readonly COMPOSE_DIR="/opt/homelab-iac/control-vm/docker-compose"
 readonly PROJECT_ROOT="/opt/homelab-iac"
 readonly TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -70,10 +70,8 @@ backup_docker_volumes() {
         "vault-data"
         "vault-logs"
         "registry-data"
-        "awx-postgres-data"
-        "awx-redis-data"
-        "awx-projects"
-        "awx-data"
+        "semaphore-postgres-data"
+        "semaphore-data"
     )
 
     for volume in "${volumes[@]}"; do
@@ -200,7 +198,7 @@ Services Backed Up:
 - Portainer
 - HashiCorp Vault
 - Docker Registry
-- AWX (PostgreSQL, Redis, Web, Task)
+- Semaphore (Ansible UI + PostgreSQL)
 
 EOF
 

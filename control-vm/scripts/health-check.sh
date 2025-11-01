@@ -194,10 +194,8 @@ check_services() {
         "Portainer:portainer"
         "Vault:vault"
         "Registry:registry"
-        "AWX PostgreSQL:awx-postgres"
-        "AWX Redis:awx-redis"
-        "AWX Web:awx-web"
-        "AWX Task:awx-task"
+        "Semaphore PostgreSQL:semaphore-postgres"
+        "Semaphore:semaphore"
     )
 
     for service in "${services[@]}"; do
@@ -222,7 +220,7 @@ check_network() {
     check_port_listening "Portainer" 9000
     check_port_listening "Vault" 8200
     check_port_listening "Registry" 5000
-    check_port_listening "AWX" 8080
+    check_port_listening "Semaphore" 3000
 
     echo ""
 }
@@ -241,7 +239,7 @@ check_endpoints() {
     check_http_endpoint "Portainer" "http://localhost:9000" "200"
     check_http_endpoint "Vault UI" "http://localhost:8200/ui" "200"
     check_http_endpoint "Registry" "http://localhost:5000/v2/" "200"
-    check_http_endpoint "AWX" "http://localhost:8080/api/v2/ping/" "200"
+    check_http_endpoint "Semaphore" "http://localhost:3000/api/ping" "200"
 
     echo ""
 }

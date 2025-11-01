@@ -27,7 +27,7 @@ services:
     networks:
       - control-net
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000"]
+      test: ["CMD", "nc", "-z", "localhost", "8000"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -37,7 +37,7 @@ services:
   # Portainer - Docker Management UI
   # --------------------------------------------------------------------------
   portainer:
-    image: portainer/portainer-ce:latest
+    image: portainer/portainer-ce:2.33.0
     container_name: portainer
     restart: unless-stopped
     ports:
@@ -100,13 +100,14 @@ services:
       REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
       REGISTRY_STORAGE_DELETE_ENABLED: "true"
       REGISTRY_HTTP_ADDR: 0.0.0.0:5000
+      REGISTRY_HTTP_SECRET: homelab-registry-secret-key-change-in-production
     volumes:
       - registry-data:/var/lib/registry
       - ./configs/registry-auth:/auth:ro
     networks:
       - control-net
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/v2/"]
+      test: ["CMD", "nc", "-z", "localhost", "5000"]
       interval: 30s
       timeout: 10s
       retries: 3

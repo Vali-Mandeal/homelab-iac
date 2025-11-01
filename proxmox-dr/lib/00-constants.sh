@@ -85,6 +85,6 @@ readonly CONTROL_VM_STACK_FILE="/opt/homelab-iac/docker-compose/control-vm-stack
 
 readonly SERVICE_MKDOCS_PORT="8000"
 readonly SERVICE_PORTAINER_PORT="9000"
-readonly SERVICE_AWX_PORT="8080"
+readonly SERVICE_SEMAPHORE_PORT="3000"
 readonly SERVICE_VAULT_PORT="8200"
 readonly SERVICE_REGISTRY_PORT="5000"

@@ -19,7 +19,7 @@ print_summary() {
     echo "Web Services (on Control VM):"
     echo "  - MkDocs Documentation: http://${CONTROL_VM_IP}:${SERVICE_MKDOCS_PORT}"
     echo "  - Portainer: http://${CONTROL_VM_IP}:${SERVICE_PORTAINER_PORT}"
-    echo "  - AWX (Ansible UI): http://${CONTROL_VM_IP}:${SERVICE_AWX_PORT}"
+    echo "  - Semaphore (Ansible UI): http://${CONTROL_VM_IP}:${SERVICE_SEMAPHORE_PORT}"
     echo "  - Vault: http://${CONTROL_VM_IP}:${SERVICE_VAULT_PORT}"
     echo "  - Docker Registry: http://${CONTROL_VM_IP}:${SERVICE_REGISTRY_PORT}"
     echo ""

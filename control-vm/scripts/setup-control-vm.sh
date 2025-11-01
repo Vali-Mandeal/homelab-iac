@@ -376,6 +376,30 @@ EOF
     log_info "Waiting for services to become healthy..."
     sleep 10
 
+    # Configure Semaphore admin password
+    log_info "Configuring Semaphore admin password..."
+    if [ -f "${COMPOSE_DIR}/.env" ]; then
+        source "${COMPOSE_DIR}/.env"
+        if [ -n "${SEMAPHORE_ADMIN_PASSWORD}" ]; then
+            # Wait for Semaphore to complete initialization (retry up to 30 seconds)
+            log_info "Waiting for Semaphore to complete initialization..."
+            for i in {1..6}; do
+                sleep 5
+                if docker exec semaphore semaphore user change-by-login \
+                    --login "${SEMAPHORE_ADMIN_NAME:-admin}" \
+                    --password "${SEMAPHORE_ADMIN_PASSWORD}" 2>/dev/null; then
+                    log_info "Semaphore admin password configured successfully"
+                    break
+                else
+                    if [ $i -eq 6 ]; then
+                        log_warn "Could not set Semaphore password automatically"
+                        log_warn "Set it manually: docker exec semaphore semaphore user change-by-login --login admin --password admin"
+                    fi
+                fi
+            done
+        fi
+    fi
+
     # Show status
     docker compose ps
 
@@ -477,7 +501,7 @@ ${GREEN}Documentation:${NC}
 
 ${GREEN}Infrastructure Management:${NC}
   Portainer:              http://${CONTROL_VM_IP}:9000
-  AWX (Ansible UI):       http://${CONTROL_VM_IP}:8080
+  Semaphore (Ansible UI): http://${CONTROL_VM_IP}:3000
   HashiCorp Vault:        http://${CONTROL_VM_IP}:8200
 
 ${GREEN}Development:${NC}
@@ -489,7 +513,7 @@ ${GREEN}Backups:${NC}
 
 ${GREEN}First-Time Setup Required:${NC}
   1. Portainer: Create admin account on first login
-  2. AWX: Login with credentials from .env file
+  2. Semaphore: Password auto-configured from .env file
   3. Vault: Use root token from ${BACKUP_MOUNT}/vault/vault-init-*.json
 
 ${GREEN}============================================================================${NC}

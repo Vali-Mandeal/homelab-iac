@@ -13,7 +13,7 @@ set -euo pipefail
 # Configuration
 # ------------------------------------------------------------------------------
 
-readonly BACKUP_ROOT="/mnt/backup/control-vm-backups"
+readonly BACKUP_ROOT="/mnt/backup/control-vm/backups"
 readonly COMPOSE_DIR="/opt/homelab-iac/control-vm/docker-compose"
 readonly PROJECT_ROOT="/opt/homelab-iac"
 
