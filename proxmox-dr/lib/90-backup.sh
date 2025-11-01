@@ -42,7 +42,7 @@ backup_terraform_state() {
         return 0
     fi
 
-    local backup_dir="${SMB_PRIVATE_MOUNT}/terraform-state-backups"
+    local backup_dir="${SMB_PRIVATE_MOUNT}/control-vm/terraform-state-backups"
     local ssh_target="${CONTROL_VM_USER}@${CONTROL_VM_IP}"
 
     create_backup_directory "$backup_dir"

@@ -319,13 +319,11 @@ setup_docker_compose() {
 
     # Check for .env file
     if [[ ! -f ".env" ]]; then
-        if [[ -f ".env.example" ]]; then
-            cp .env.example .env
-            log_info "Created .env from template (contains placeholder passwords)"
-        else
-            log_error "No .env.example file found"
-            return 1
-        fi
+        log_error "No .env file found. Please create one from .env.example:"
+        log_error "  cp .env.example .env"
+        log_error "  # Edit .env and replace CHANGEME values with your credentials"
+        log_error "  # Generate random secrets: openssl rand -hex 32"
+        return 1
     fi
 
     # Create registry auth directory and htpasswd file
