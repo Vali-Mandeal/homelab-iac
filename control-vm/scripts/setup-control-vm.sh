@@ -319,11 +319,19 @@ setup_docker_compose() {
 
     # Check for .env file
     if [[ ! -f ".env" ]]; then
-        log_error "No .env file found. Please create one from .env.example:"
-        log_error "  cp .env.example .env"
-        log_error "  # Edit .env and replace CHANGEME values with your credentials"
-        log_error "  # Generate random secrets: openssl rand -hex 32"
+        log_error "No .env file found in ${COMPOSE_DIR}"
         return 1
+    fi
+
+    # Generate random secrets if placeholders exist
+    if grep -q "change_me_generate_with_openssl_rand_hex_32" .env; then
+        log_info "Generating random secrets for .env..."
+        local encryption_key=$(openssl rand -hex 32)
+        local registry_secret=$(openssl rand -hex 32)
+        sed -i.bak "s/SEMAPHORE_ACCESS_KEY_ENCRYPTION=.*/SEMAPHORE_ACCESS_KEY_ENCRYPTION=${encryption_key}/" .env
+        sed -i.bak "s/REGISTRY_HTTP_SECRET=.*/REGISTRY_HTTP_SECRET=${registry_secret}/" .env
+        rm -f .env.bak
+        log_info "Random secrets generated"
     fi
 
     # Create registry auth directory and htpasswd file
