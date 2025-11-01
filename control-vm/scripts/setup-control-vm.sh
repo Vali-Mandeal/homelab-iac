@@ -342,16 +342,16 @@ setup_docker_compose() {
 
         # Save credentials to backup location
         if [[ -d "${BACKUP_MOUNT}" ]]; then
-            mkdir -p "${BACKUP_MOUNT}/credentials"
+            mkdir -p "${BACKUP_MOUNT}/control-vm/credentials"
             local timestamp=$(date +%Y%m%d_%H%M%S)
-            cat > "${BACKUP_MOUNT}/credentials/docker-registry-${timestamp}.txt" <<EOF
+            cat > "${BACKUP_MOUNT}/control-vm/credentials/docker-registry-${timestamp}.txt" <<EOF
 Docker Registry Credentials
 Generated: $(date)
 Username: ${registry_user}
 Password: ${registry_password}
 EOF
-            chmod 600 "${BACKUP_MOUNT}/credentials/docker-registry-${timestamp}.txt"
-            log_info "Registry credentials saved to ${BACKUP_MOUNT}/credentials/"
+            chmod 600 "${BACKUP_MOUNT}/control-vm/credentials/docker-registry-${timestamp}.txt"
+            log_info "Registry credentials saved to ${BACKUP_MOUNT}/control-vm/credentials/"
         fi
 
         log_info "Registry authentication configured for user: ${registry_user}"
@@ -376,29 +376,8 @@ EOF
     log_info "Waiting for services to become healthy..."
     sleep 10
 
-    # Configure Semaphore admin password
-    log_info "Configuring Semaphore admin password..."
-    if [ -f "${COMPOSE_DIR}/.env" ]; then
-        source "${COMPOSE_DIR}/.env"
-        if [ -n "${SEMAPHORE_ADMIN_PASSWORD}" ]; then
-            # Wait for Semaphore to complete initialization (retry up to 30 seconds)
-            log_info "Waiting for Semaphore to complete initialization..."
-            for i in {1..6}; do
-                sleep 5
-                if docker exec semaphore semaphore user change-by-login \
-                    --login "${SEMAPHORE_ADMIN_NAME:-admin}" \
-                    --password "${SEMAPHORE_ADMIN_PASSWORD}" 2>/dev/null; then
-                    log_info "Semaphore admin password configured successfully"
-                    break
-                else
-                    if [ $i -eq 6 ]; then
-                        log_warn "Could not set Semaphore password automatically"
-                        log_warn "Set it manually: docker exec semaphore semaphore user change-by-login --login admin --password admin"
-                    fi
-                fi
-            done
-        fi
-    fi
+    # Semaphore creates admin user automatically from environment variables
+    log_info "Semaphore admin user will be created automatically from .env credentials"
 
     # Show status
     docker compose ps
@@ -433,7 +412,7 @@ initialize_vault() {
 
     if [[ "$init_status" == "true" ]]; then
         log_info "Vault is already initialized"
-        log_warn "Root token and unseal keys should be in ${BACKUP_MOUNT}/vault/"
+        log_warn "Root token and unseal keys should be in ${BACKUP_MOUNT}/control-vm/vault/"
         return 0
     fi
 
@@ -446,7 +425,7 @@ initialize_vault() {
         http://localhost:8200/v1/sys/init)
 
     # Save initialization output to backup
-    local vault_backup_dir="${BACKUP_MOUNT}/vault"
+    local vault_backup_dir="${BACKUP_MOUNT}/control-vm/vault"
     mkdir -p "${vault_backup_dir}"
 
     local timestamp
@@ -509,12 +488,12 @@ ${GREEN}Development:${NC}
 
 ${GREEN}Backups:${NC}
   SMB Mount Point:        ${BACKUP_MOUNT}
-  Vault Keys Location:    ${BACKUP_MOUNT}/vault/
+  Vault Keys Location:    ${BACKUP_MOUNT}/control-vm/vault/
 
 ${GREEN}First-Time Setup Required:${NC}
   1. Portainer: Create admin account on first login
   2. Semaphore: Password auto-configured from .env file
-  3. Vault: Use root token from ${BACKUP_MOUNT}/vault/vault-init-*.json
+  3. Vault: Use root token from ${BACKUP_MOUNT}/control-vm/vault/vault-init-*.json
 
 ${GREEN}============================================================================${NC}
 
