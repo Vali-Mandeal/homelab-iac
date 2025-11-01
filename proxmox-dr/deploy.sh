@@ -209,6 +209,16 @@ copy_files_to_proxmox() {
     log_info "Copying configuration file..."
     scp $ssh_key_opt -P "$SSH_PORT" "$CONFIG_FILE" "${SSH_TARGET}:${REMOTE_DIR}/config/proxmox-config.env"
 
+    # Copy .env file for Control VM if it exists
+    local control_vm_env="${SCRIPT_DIR}/../control-vm/docker-compose/.env"
+    if [[ -f "$control_vm_env" ]]; then
+        log_info "Copying Control VM .env file..."
+        ssh $ssh_key_opt -p "$SSH_PORT" "$SSH_TARGET" "mkdir -p '${REMOTE_DIR}/control-vm-config'"
+        scp $ssh_key_opt -P "$SSH_PORT" "$control_vm_env" "${SSH_TARGET}:${REMOTE_DIR}/control-vm-config/.env"
+    else
+        log_warn "Control VM .env file not found at $control_vm_env"
+    fi
+
     log_info "Files copied successfully"
 }
 
